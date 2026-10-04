@@ -20,6 +20,14 @@ LOKITA v2.0: community-based local marketplace (Indonesia) connecting residents 
 ## Core (static) requirements — LOCKED
 One account dual-role · community data isolation · permanent store (visible when closed, no ordering) · product lifecycle (AVAILABLE/LIMITED/SOLD_OUT/INACTIVE) · cart grouped per store · global unique Order ID · 8-state order machine · 5-min seller confirm / 1-min buyer cancel / 5-min auto-cancel (server time) · reject only "Produk Habis" + recommendations · delivery modes A/B · Titip = permission + 2 proof photos · COD + QRIS + QRIS→COD recovery (same order) · order-linked chat view-only on SELESAI · two-way rating + reliability foundation · reports/moderation · RBAC + audit · in-app + external account deletion.
 
+## Implemented (2026-06) — Stage 12: Community Admin & Platform Dashboards (23/23 backend + FE E2E verified)
+- **Community Dashboard** `/community/[id]/dashboard`: header (name/status/verification/role badges), Ringkasan stat grid (members, active members, sellers, active/total stores, products, orders), 7-day order activity bar chart, Kelola action grid. Role-gated UI.
+- **Member management** `/members`; **Seller/Toko** `/stores` (per-store product/order counts); **Admin & Moderator** `/staff` (owner appoints/revokes Admin; admin+ appoints Moderator; member picker + confirm dialog; audited).
+- **Invitation/QR** `/invite` (QR via react-native-qrcode-svg, copy + regenerate code); **Settings** `/settings` (edit profile, verification request, ownership transfer owner-only + confirm); **Community Audit** `/audit`.
+- **Create Community** `/community/create` (4-step wizard; pilot auto-active per LOCKED §9; creator = owner). Entry points added to Akun tab + community/select ("Kelola Komunitas", "Buat Komunitas").
+- **Super Admin Platform Dashboard** `/admin` enriched: GMV card, platform stat grid (users/active/sellers/communities/products/orders), reports banner, all-communities list (tap→community dashboard), recent audit + full `/admin/audit`.
+- **Backend** `community_admin.py` (NEW router) + extended `misc.py` (`/admin/communities`, `/admin/audit`, active_users metric). Strict COMMUNITY ISOLATION enforced server-side via memberships + governance ranks (member/seller 0, moderator 1, admin 2, owner 3); super_admin = platform-wide scope bypass. All sensitive actions audited. Private buyer↔seller order chat remains participant-only (unchanged). No destructive migration; all existing marketplace flows preserved.
+
 ## Implemented (2026-06) — v1 MVP, end-to-end verified (27/27 backend + FE smoke)
 - Auth (OTP/PIN/JWT/sessions), community join/switch/isolation, seed pilot community (code LOKITA) + admin + demo seller "Warung Bu Sri".
 - Seller store CRUD + open/close + QRIS/logo/cover upload; product CRUD + stock/variants/addons.

@@ -209,11 +209,56 @@ async def admin_metrics(user: dict = Depends(require_platform("super_admin", "pl
         {"$group": {"_id": None, "gmv": {"$sum": "$total"}}}]).to_list(1)
     gmv = gmv_agg[0]["gmv"] if gmv_agg else 0
     open_reports = await reports.count_documents({"status": "REVIEW"})
+    # active users: placed/received an order in last 30 days
+    from datetime import timedelta
+    cutoff = now() - timedelta(days=30)
+    recent = await orders.find({"created_at": {"$gt": cutoff}}, NO_ID).to_list(10000)
+    active_ids = set()
+    for o in recent:
+        active_ids.add(o["buyer_id"])
+        active_ids.add(o["seller_id"])
     return {
         "users": total_users, "sellers": total_sellers, "buyers": total_users - total_sellers,
-        "communities": total_comm, "products": total_products, "orders": total_orders,
-        "completed_orders": completed, "gmv": gmv, "open_reports": open_reports,
+        "active_users": len(active_ids), "communities": total_comm, "products": total_products,
+        "orders": total_orders, "completed_orders": completed, "gmv": gmv,
+        "open_reports": open_reports,
     }
+
+
+@router.get("/admin/communities")
+async def admin_communities(user: dict = Depends(require_platform("super_admin", "platform_ops"))):
+    docs = await communities.find({}, NO_ID).sort("created_at", -1).limit(200).to_list(200)
+    out = []
+    for c in docs:
+        member_count = await memberships.count_documents({"community_id": c["id"]})
+        store_count = await stores.count_documents({"community_id": c["id"], "deleted_at": None})
+        order_count = await orders.count_documents({"community_id": c["id"]})
+        owner = await users.find_one({"id": c.get("owner_id")}, NO_ID)
+        status = c.get("verification_status") or ("verified" if c.get("verified") else "unverified")
+        out.append({
+            "id": c["id"], "name": c["name"], "location": c.get("location", ""),
+            "status": c.get("status", "active"), "verification_status": status,
+            "owner_name": (owner or {}).get("name") or "—",
+            "members": member_count, "stores": store_count, "orders": order_count,
+            "created_at": iso(c.get("created_at")),
+        })
+    return out
+
+
+@router.get("/admin/audit")
+async def admin_audit(user: dict = Depends(require_platform("super_admin", "platform_ops"))):
+    docs = await audit_logs.find({}, NO_ID).sort("created_at", -1).limit(150).to_list(150)
+    actor_ids = [d.get("actor_id") for d in docs if d.get("actor_id")]
+    actors = {u["id"]: u for u in await users.find({"id": {"$in": actor_ids}}, NO_ID).to_list(300)}
+    out = []
+    for d in docs:
+        a = actors.get(d.get("actor_id"), {})
+        out.append({
+            "id": d["id"], "actor_name": a.get("name") or "Sistem",
+            "action": d.get("action"), "target": d.get("target"),
+            "meta": d.get("meta", {}), "created_at": iso(d.get("created_at")),
+        })
+    return out
 
 
 @router.get("/admin/reports")

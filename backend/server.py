@@ -16,6 +16,7 @@ import marketplace as market_mod
 import orders as orders_mod
 import chat as chat_mod
 import misc as misc_mod
+import community_admin as comm_admin_mod
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -31,7 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for m in (auth_mod, comm_mod, sellers_mod, market_mod, orders_mod, chat_mod, misc_mod):
+for m in (auth_mod, comm_mod, sellers_mod, market_mod, orders_mod, chat_mod, misc_mod, comm_admin_mod):
     app.include_router(m.router)
 
 

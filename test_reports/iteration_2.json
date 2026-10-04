@@ -1,0 +1,57 @@
+{
+  "summary": "LOKITA Stage 12 (Community Admin & Owner Dashboard + Super Admin platform dashboard) — all 23 new backend pytest cases PASS (platform metrics/communities/audit, community dashboard/members/stores/invite/staff/settings/verification/transfer/audit, RBAC, strict community isolation, create-community). Frontend smoke on mobile viewport (390x844): login as super admin → Akun tab shows 'Kelola Komunitas', 'Buat Komunitas', 'Dashboard Platform' entries → /admin renders Dashboard Platform with GMV card (Rp65.000), stat tiles (181 users, 14 active, 2 sellers, 41 communities, 6 products, 16 orders, 0 open reports) and community list with verification badges → /admin/audit renders audit log → /community/create renders 4-step wizard with form. React Native/Expo web preview mounted cleanly with no red screen. Lokita regression suite (iteration_1 file) exhibits flaky failures caused by low-stock seed products ('Ayam Bakar + Nasi' stock=2, 'Soto Ayam' stock=3) being drained by concurrent fixture signups — NOT a Stage 12 regression (marketplace/orders code untouched). Minor UI state issue: super admin's active_community_id was pushed off Pilot by prior test fixtures that created communities; `/communities/{id}/switch` restores correctly. One deprecation warning emitted by RN web shim: 'shadow* style props are deprecated. Use boxShadow.' — informational only.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/community/* (seed data)", "issue": "test suite leaves ephemeral TEST communities and modifies Pilot invite_code / description. The /communities/{cid}/invite/regenerate test was moved to use a disposable community to protect LOKITA; but earlier runs mutated Pilot description. Consider a dedicated test-cleanup endpoint or guard."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "(tabs)/index.tsx", "issue": "Header may show stale community name when active_community_id was changed server-side but client cached community object (observed as 'Komunitas Pilot LOKITA' header while stores list correctly reflected the newly-active empty community). Minor refresh-on-focus issue.", "testID": "tab-beranda", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/admin", "issues": ["Stat tiles render well on 390px viewport; GMV card has strong contrast; community list rows have proper 56px touch targets."]},
+      {"screen": "/community/create", "issues": ["4-step pill indicator at top is clear and scannable."]}
+    ],
+    "react_native_issues": [
+      {"component": "react-native-web shadow styles", "issue": "Deprecation warning in console: 'shadow* style props are deprecated. Use boxShadow.' — should migrate shadowColor/shadowOffset/shadowOpacity/shadowRadius to boxShadow for RN 0.76+. Reference: any StyleSheet.create using shadow* across new Stage 12 screens."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_stage12_admin.py",
+    "/app/backend/tests/test_lokita_backend.py",
+    "/app/test_reports/pytest/stage12_results.xml",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "No functional fix needed for Stage 12 features — all pass.",
+    "Minor: migrate shadow* style props to boxShadow in Stage 12 screens to silence RN 0.76+ deprecation warning.",
+    "Nice-to-have: on (tabs)/index.tsx, refetch active community metadata on focus so the header never shows a stale name after switching communities.",
+    "Seed hardening (not blocking): raise seed stock for low-stock products ('Ayam Bakar + Nasi'=2, 'Soto Ayam'=3) to >=25 so the lokita_backend regression suite is deterministically re-runnable without external DB resets.",
+    "Optional: after full regression runs, call /communities/{PILOT}/switch to reset admin's active community to Pilot so manual UI inspection of marketplace isn't blocked."
+  ],
+  "critical_code_review_comments": [
+    "community_admin.py:_access() — correct min-rank gate with super_admin bypass; owner authority via communities.owner_id overrides stale membership role. Clean.",
+    "community_admin.py:remove_staff — correctly computes min_rank by TARGET role (admin→owner, moderator→admin+), properly reverts to 'seller' if the user still owns a store in the community.",
+    "community_admin.py:transfer_ownership — rank-3 (owner/super) only, atomically flips owner_id and both parties' membership + user.community_roles, logs audit, notifies both.",
+    "misc.py:admin_metrics/admin_communities/admin_audit — require_platform('super_admin','platform_ops') gates them; verified 403 for buyer AND outsider community-owner.",
+    "communities.py:create_community — sets active_community_id=new cid for the creator (correct), creates owner membership + roles map in users.",
+    "marketplace.py:_active_cid — returns 400 when active_community_id missing; community isolation guaranteed by filtering {community_id: cid} on every market query."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_stage12_admin.py (new)",
+    "/app/test_reports/iteration_2.json (new)",
+    "/app/test_reports/pytest/stage12_results.xml (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (23/23 Stage 12 cases); lokita_backend regression ~56% under parallel load due to stock exhaustion flakes (code logic unchanged, confirmed via single-case debug reproducing 'Keranjang kosong' when low-stock product is picked)",
+    "frontend": "100% of Stage 12 screens render (admin, admin/audit, community/create confirmed via screenshot; dashboard/members/stores/staff/invite/settings/audit confirmed loading without errors)"
+  },
+  "seed_data_creation": "Stage 12 fixtures create ephemeral TEST users (phone prefix 08139…) joined to Pilot via LOKITA code; module-scoped `outsider_owner` creates one disposable community per run. All test-created communities remain in DB prefixed 'TEST ' — visible in /admin/communities list. The Pilot invite code was mutated to a random hex during an initial regenerate test run and manually restored to 'LOKITA' via Mongo before the final green run; the regenerate test now targets a disposable community so this cannot recur.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Stage 12 backend coverage at /app/backend/tests/test_stage12_admin.py — 23 cases, ~11s on preview. Run with `python -m pytest backend/tests/test_stage12_admin.py` (xdist 2 workers via pytest.ini). Avoid running both test files concurrently via -n>1 on the preview ingress — observed 10s timeouts under combined load; use `pytest backend/tests/test_stage12_admin.py` and `pytest backend/tests/test_lokita_backend.py` separately. The LOKITA invite code may be regenerated by future admin tests — if lokita_backend fixtures start erroring with 404 on join, restore via Mongo: `db.communities.update_one({'name':'Komunitas Pilot LOKITA'},{'$set':{'invite_code':'LOKITA'}})`. Super admin's active_community_id may drift to a non-Pilot community after create/switch tests — call `/api/communities/{pilot_id}/switch` to restore marketplace UI inspection. All Stage 12 UI testIDs are present or deep-link navigable; use window.history.pushState + popstate for deep-URL testing because the Expo router hydrates auth on mount.",
+  "rca_of_issue": "No defects in Stage 12. The one visible side-effect — Home screen showing 'Belum ada toko' for the super admin — is a benign consequence of active_community_id having been reassigned to a community without stores by preceding test fixtures (community/create endpoint sets active_community_id for the creator by design). Verified by direct API: switching active to Pilot via /api/communities/{PILOT}/switch returns status 200 and /market/stores immediately returns 2 stores ('Warung Bu Sri', 'Mie Ayam Kering'). The 'Komunitas Pilot LOKITA' header lingering while stores list reflects the new community indicates a minor UI cache that should refetch on focus (low priority)."
+}

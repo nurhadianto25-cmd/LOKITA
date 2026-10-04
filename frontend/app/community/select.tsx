@@ -67,11 +67,14 @@ export default function CommunitySelect() {
               <Button testID="join-community-btn" title="Gabung Komunitas" icon="enter-outline"
                 loading={join.isPending} onPress={() => code.trim() && join.mutate(code.trim())} />
             </Card>
+            <Button testID="create-community-btn" title="Buat Komunitas Baru" icon="add-circle-outline" variant="outline"
+              onPress={() => router.push("/community/create")} />
             {(mine.data?.length ?? 0) > 0 ? <Text style={styles.section}>Komunitas Saya</Text> : null}
           </View>
         }
         renderItem={({ item }) => {
           const active = item.id === user?.active_community_id;
+          const canManage = ["owner", "admin", "moderator"].includes(item.my_role || "");
           return (
             <Pressable testID={`community-${item.id}`} onPress={() => switchTo.mutate(item.id)}>
               <Card style={active ? { borderColor: colors.brandPrimary, borderWidth: 2 } : undefined}>
@@ -83,6 +86,13 @@ export default function CommunitySelect() {
                   </View>
                   {active ? <Icon name="checkmark-circle" color={colors.brandPrimary} /> : <Icon name="chevron-forward" color={colors.muted} />}
                 </View>
+                {canManage ? (
+                  <Pressable testID={`manage-${item.id}`} onPress={() => router.push(`/community/${item.id}/dashboard`)}
+                    style={styles.manageBtn}>
+                    <Icon name="shield-checkmark" size={16} color={colors.brandPrimary} />
+                    <Text style={styles.manageText}>Kelola Komunitas</Text>
+                  </Pressable>
+                ) : null}
               </Card>
             </Pressable>
           );
@@ -103,4 +113,6 @@ const useStyles = makeStyles((c) => ({
   cIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.brandTertiary, alignItems: "center", justifyContent: "center" },
   cName: { fontSize: 16, fontWeight: "500", color: c.onSurface },
   cMeta: { fontSize: 13, color: c.muted, marginTop: 2 },
+  manageBtn: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: c.border },
+  manageText: { fontSize: 13, color: c.brandPrimary, fontWeight: "600" },
 }));

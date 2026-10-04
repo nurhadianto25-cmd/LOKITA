@@ -39,6 +39,10 @@ export default function Akun() {
   });
 
   const isPlatform = (user?.platform_roles?.length || 0) > 0;
+  const isSuperAdmin = (user?.platform_roles || []).includes("super_admin");
+  const activeId = user?.active_community_id || undefined;
+  const activeRole = activeId ? user?.community_roles?.[activeId] : undefined;
+  const canManageActive = !!activeId && (["owner", "admin", "moderator"].includes(activeRole || "") || isSuperAdmin);
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={{ paddingBottom: insets.bottom + 90 }}>
@@ -69,9 +73,13 @@ export default function Akun() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Akun</Text>
         <MenuItem testID="communities-btn" icon="people" label="Komunitas Saya" onPress={() => router.push("/community/select")} />
+        {canManageActive ? (
+          <MenuItem testID="manage-community-btn" icon="shield-checkmark" label="Kelola Komunitas" onPress={() => router.push(`/community/${activeId}/dashboard`)} />
+        ) : null}
+        <MenuItem testID="create-community-btn" icon="add-circle" label="Buat Komunitas" onPress={() => router.push("/community/create")} />
         <MenuItem testID="sessions-btn" icon="phone-portrait" label="Sesi & Perangkat" onPress={() => router.push("/account/sessions")} />
         {isPlatform ? (
-          <MenuItem testID="admin-btn" icon="bar-chart" label="Dashboard Admin" onPress={() => router.push("/admin")} />
+          <MenuItem testID="admin-btn" icon="bar-chart" label="Dashboard Platform" onPress={() => router.push("/admin")} />
         ) : null}
       </View>
 
