@@ -40,7 +40,9 @@ async def upload_file(file: UploadFile = File(...), kind: str = Form("product"),
     ct = file.content_type or "image/jpeg"
     if not ct.startswith("image/"):
         raise HTTPException(400, "Hanya file gambar yang diizinkan")
-    ext = "png" if "png" in ct else "jpg"
+    ext_map = {"image/png": "png", "image/webp": "webp", "image/gif": "gif",
+               "image/heic": "heic", "image/heif": "heif", "image/jpeg": "jpg", "image/jpg": "jpg"}
+    ext = ext_map.get(ct.lower(), "jpg")
     rec = await store_upload(data, ct, user["id"], kind, order_id, ext)
     return rec
 

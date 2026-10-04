@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { makeStyles, useTheme } from "@/src/theme";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { Icon, Loading, Button, Input, Field } from "@/src/components/ui";
 import { useToast } from "@/src/components/Toast";
 import { api, fileUrl, uploadImage } from "@/src/api/client";
+import { pickFromGallery, openAppSettings } from "@/src/utils/media";
 
 const CATS = ["Makanan", "Minuman", "Sayur", "Buah", "Umum"];
 
@@ -48,12 +49,18 @@ export default function ProductEdit() {
   });
 
   async function pickPhoto() {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return toast("Izin galeri diperlukan", "error");
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.6 });
-    if (res.canceled || !res.assets?.[0]) return;
-    try { const up = await uploadImage(res.assets[0].uri, "product"); setF((p: any) => ({ ...p, photo_file_id: up.id })); }
-    catch (e: any) { toast(e.message, "error"); }
+    const r = await pickFromGallery();
+    if (!r.ok) {
+      if (r.canceled) return;
+      if (r.blocked) { toast("Izin galeri ditolak. Buka Pengaturan.", "error"); openAppSettings(); }
+      else if (r.error) toast(r.error, "error");
+      return;
+    }
+    try {
+      const a = r.asset!;
+      const up = await uploadImage(a.uri, "product", undefined, { mimeType: a.mimeType, fileName: a.fileName });
+      setF((p: any) => ({ ...p, photo_file_id: up.id }));
+    } catch (e: any) { toast(e.message, "error"); }
   }
 
   const set = (k: string) => (v: any) => setF((p: any) => ({ ...p, [k]: v }));

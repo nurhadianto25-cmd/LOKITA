@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { Linking } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
@@ -13,6 +12,7 @@ import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { Icon, Loading, Button, Input, Field } from "@/src/components/ui";
 import { useToast } from "@/src/components/Toast";
 import { api, fileUrl, uploadImage } from "@/src/api/client";
+import { pickFromGallery, openAppSettings } from "@/src/utils/media";
 
 const CATS = ["Makanan", "Minuman", "Sayur", "Buah", "Umum", "Jasa"];
 
@@ -57,12 +57,16 @@ export default function SellerStore() {
   });
 
   async function pick(field: string, kind: string) {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return toast("Izin galeri diperlukan", "error");
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.6 });
-    if (res.canceled || !res.assets?.[0]) return;
+    const r = await pickFromGallery();
+    if (!r.ok) {
+      if (r.canceled) return;
+      if (r.blocked) { toast("Izin galeri ditolak. Buka Pengaturan.", "error"); openAppSettings(); }
+      else if (r.error) toast(r.error, "error");
+      return;
+    }
     try {
-      const up = await uploadImage(res.assets[0].uri, kind);
+      const a = r.asset!;
+      const up = await uploadImage(a.uri, kind, undefined, { mimeType: a.mimeType, fileName: a.fileName });
       setF((p: any) => ({ ...p, [field]: up.id }));
     } catch (e: any) { toast(e.message, "error"); }
   }

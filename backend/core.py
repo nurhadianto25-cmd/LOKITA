@@ -54,6 +54,7 @@ audit_logs = db.audit_logs
 otp_challenges = db.otp_challenges
 sessions = db.sessions
 files = db.files
+join_requests = db.join_requests
 
 NO_ID = {"_id": 0}
 
@@ -212,6 +213,25 @@ async def community_role(user: dict, community_id: str) -> Optional[str]:
 async def assert_member(user: dict, community_id: str):
     if not await memberships.find_one({"user_id": user["id"], "community_id": community_id}):
         raise HTTPException(403, "Anda bukan anggota komunitas ini")
+
+
+async def leave_other_communities(user_id: str, keep_cid: str):
+    """One user = one community: on joining keep_cid, drop every OTHER membership
+    except communities the user OWNS (owned communities are never orphaned)."""
+    mems = await memberships.find({"user_id": user_id}, NO_ID).to_list(1000)
+    u = await users.find_one({"id": user_id}, NO_ID)
+    roles = (u.get("community_roles") or {}) if u else {}
+    for m in mems:
+        cid = m["community_id"]
+        if cid == keep_cid:
+            continue
+        c = await communities.find_one({"id": cid}, NO_ID)
+        if c and c.get("owner_id") == user_id:
+            continue
+        await memberships.delete_one({"id": m["id"]})
+        roles.pop(cid, None)
+    await users.update_one({"id": user_id},
+                           {"$set": {"community_roles": roles, "active_community_id": keep_cid}})
 
 
 # ----------------------------------------------------------------------------- order number

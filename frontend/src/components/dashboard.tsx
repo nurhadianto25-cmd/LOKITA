@@ -39,8 +39,8 @@ export function StatTile({ icon, value, label, delta, testID }:
 }
 
 // --------------------------------------------------------------- action tile
-export function ActionTile({ icon, label, onPress, disabled, testID }:
-  { icon: string; label: string; onPress?: () => void; disabled?: boolean; testID?: string }) {
+export function ActionTile({ icon, label, onPress, disabled, testID, badge }:
+  { icon: string; label: string; onPress?: () => void; disabled?: boolean; testID?: string; badge?: number }) {
   const styles = useStyles();
   const { colors } = useTheme();
   return (
@@ -50,6 +50,11 @@ export function ActionTile({ icon, label, onPress, disabled, testID }:
         <Ionicons name={icon as any} size={20} color={colors.brandPrimary} />
       </View>
       <Text style={styles.actionLabel} numberOfLines={2}>{label}</Text>
+      {badge && badge > 0 ? (
+        <View testID={`${testID}-badge`} style={styles.actionBadge}>
+          <Text style={styles.actionBadgeText}>{badge}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -100,6 +105,8 @@ const useStyles = makeStyles((c) => ({
     alignItems: "center", justifyContent: "center",
   },
   actionLabel: { fontSize: 12, color: c.onSurface, textAlign: "center", fontWeight: "500" },
+  actionBadge: { position: "absolute", top: 8, right: 8, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: c.error, alignItems: "center", justifyContent: "center", paddingHorizontal: 5 },
+  actionBadgeText: { color: "#FFFFFF", fontSize: 11, fontWeight: "700" },
 
   chart: { flexDirection: "row", alignItems: "flex-end", gap: 8, height: 150, paddingTop: 8 },
   chartCol: { flex: 1, alignItems: "center", gap: 4 },

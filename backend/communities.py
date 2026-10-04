@@ -4,7 +4,8 @@ from pydantic import BaseModel
 import secrets
 
 from core import (
-    communities, memberships, users, new_id, now, current_user, NO_ID, audit,
+    communities, memberships, users, join_requests, new_id, now, current_user,
+    NO_ID, audit, notify, leave_other_communities,
 )
 
 router = APIRouter(prefix="/api/communities", tags=["communities"])
@@ -97,8 +98,51 @@ async def join_community(body: JoinIn, user: dict = Depends(current_user)):
         roles = user.get("community_roles") or {}
         roles[c["id"]] = "member"
         await users.update_one({"id": user["id"]}, {"$set": {"community_roles": roles}})
-    await users.update_one({"id": user["id"]}, {"$set": {"active_community_id": c["id"]}})
+    # one user = one community: drop other (non-owned) memberships, set active
+    await leave_other_communities(user["id"], c["id"])
     return await _public(c, user["id"])
+
+
+@router.get("/search")
+async def search_communities(q: str = "", user: dict = Depends(current_user)):
+    query = {"status": "active"}
+    if q.strip():
+        query["name"] = {"$regex": q.strip(), "$options": "i"}
+    docs = await communities.find(query, NO_ID).sort("created_at", -1).limit(50).to_list(50)
+    out = []
+    for c in docs:
+        pub = await _public(c, user["id"])
+        if pub.get("my_role"):
+            pub["join_status"] = "member"
+        else:
+            pending = await join_requests.find_one(
+                {"community_id": c["id"], "user_id": user["id"], "status": "pending"})
+            pub["join_status"] = "pending" if pending else "none"
+        out.append(pub)
+    return out
+
+
+@router.post("/{community_id}/request-join")
+async def request_join(community_id: str, user: dict = Depends(current_user)):
+    c = await communities.find_one({"id": community_id, "status": "active"}, NO_ID)
+    if not c:
+        raise HTTPException(404, "Komunitas tidak ditemukan")
+    if await memberships.find_one({"user_id": user["id"], "community_id": community_id}):
+        raise HTTPException(400, "Anda sudah menjadi anggota komunitas ini")
+    if await join_requests.find_one({"community_id": community_id, "user_id": user["id"], "status": "pending"}):
+        raise HTTPException(400, "Permintaan Anda sedang menunggu persetujuan admin")
+    await join_requests.insert_one({
+        "id": new_id(), "community_id": community_id, "user_id": user["id"],
+        "user_name": user.get("name") or "Pengguna", "status": "pending",
+        "created_at": now(), "decided_at": None, "decided_by": None,
+    })
+    admins = await memberships.find(
+        {"community_id": community_id, "role": {"$in": ["owner", "admin"]}}, NO_ID).to_list(100)
+    for a in admins:
+        await notify(a["user_id"], "community", "Permintaan bergabung baru",
+                     f"{user.get('name') or 'Seseorang'} ingin bergabung ke {c['name']}.")
+    await audit(user["id"], "community.join.request", community_id, {"community": community_id})
+    return {"ok": True, "status": "pending"}
 
 
 @router.post("/{community_id}/switch")

@@ -19,8 +19,23 @@ export default function CommunitySelect() {
   const { user, refresh } = useAuth();
   const qc = useQueryClient();
   const [code, setCode] = useState("");
+  const [search, setSearch] = useState("");
 
   const mine = useQuery({ queryKey: ["my-communities"], queryFn: () => api.get("/communities/mine") });
+  const results = useQuery({
+    queryKey: ["community-search", search],
+    queryFn: () => api.get(`/communities/search?q=${encodeURIComponent(search.trim())}`),
+    enabled: search.trim().length >= 2,
+  });
+
+  const requestJoin = useMutation({
+    mutationFn: (id: string) => api.post(`/communities/${id}/request-join`),
+    onSuccess: () => {
+      toast("Permintaan bergabung dikirim. Menunggu persetujuan admin.", "success");
+      qc.invalidateQueries({ queryKey: ["community-search"] });
+    },
+    onError: (e: any) => toast(e.message, "error"),
+  });
 
   const join = useMutation({
     mutationFn: (invite_code: string) => api.post("/communities/join", { invite_code }),
@@ -69,6 +84,37 @@ export default function CommunitySelect() {
             </Card>
             <Button testID="create-community-btn" title="Buat Komunitas Baru" icon="add-circle-outline" variant="outline"
               onPress={() => router.push("/community/create")} />
+
+            <Card>
+              <Field label="Cari Komunitas berdasarkan nama">
+                <Input testID="community-search-input" value={search} onChangeText={setSearch}
+                  placeholder="mis. Taman Harapan" autoCapitalize="none" />
+              </Field>
+              {search.trim().length >= 2 ? (
+                <View style={{ marginTop: 10, gap: 8 }}>
+                  {results.isFetching ? <Text style={styles.sub}>Mencari...</Text> :
+                    (results.data?.length ?? 0) === 0 ? <Text style={styles.sub}>Tidak ada komunitas ditemukan.</Text> :
+                    results.data.map((r: any) => (
+                      <View key={r.id} testID={`search-result-${r.id}`} style={styles.resultRow}>
+                        <View style={styles.cIcon}><Icon name="people" size={18} color={colors.brandPrimary} /></View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.cName} numberOfLines={1}>{r.name}</Text>
+                          <Text style={styles.cMeta}>{r.location || "Komunitas"} · {r.member_count} anggota</Text>
+                        </View>
+                        {r.join_status === "member" ? (
+                          <Text style={styles.statusMember}>Terdaftar</Text>
+                        ) : r.join_status === "pending" ? (
+                          <Text style={styles.statusPending}>Menunggu</Text>
+                        ) : (
+                          <Button testID={`request-join-${r.id}`} title="Bergabung" small
+                            loading={requestJoin.isPending} onPress={() => requestJoin.mutate(r.id)} />
+                        )}
+                      </View>
+                    ))}
+                </View>
+              ) : null}
+            </Card>
+
             {(mine.data?.length ?? 0) > 0 ? <Text style={styles.section}>Komunitas Saya</Text> : null}
           </View>
         }
@@ -115,4 +161,7 @@ const useStyles = makeStyles((c) => ({
   cMeta: { fontSize: 13, color: c.muted, marginTop: 2 },
   manageBtn: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: c.border },
   manageText: { fontSize: 13, color: c.brandPrimary, fontWeight: "600" },
+  resultRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },
+  statusMember: { fontSize: 12, color: c.success, fontWeight: "600" },
+  statusPending: { fontSize: 12, color: c.warning, fontWeight: "600" },
 }));

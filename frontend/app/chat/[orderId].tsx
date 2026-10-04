@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { View, Text, FlatList, Pressable, Platform, TextInput } from "react-native";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
@@ -12,6 +11,7 @@ import { Icon, Loading } from "@/src/components/ui";
 import { Badge } from "@/src/components/ui";
 import { useToast } from "@/src/components/Toast";
 import { api, fileUrl, uploadImage } from "@/src/api/client";
+import { pickFromGallery, openAppSettings } from "@/src/utils/media";
 import { ORDER_STATUS } from "@/src/constants";
 
 export default function ChatThread() {
@@ -37,12 +37,16 @@ export default function ChatThread() {
   }, [q.data?.messages?.length]);
 
   async function sendPhoto() {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return toast("Izin galeri diperlukan", "error");
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.6 });
-    if (res.canceled || !res.assets?.[0]) return;
+    const r = await pickFromGallery();
+    if (!r.ok) {
+      if (r.canceled) return;
+      if (r.blocked) { toast("Izin galeri ditolak. Buka Pengaturan.", "error"); openAppSettings(); }
+      else if (r.error) toast(r.error, "error");
+      return;
+    }
     try {
-      const up = await uploadImage(res.assets[0].uri, "chat", orderId);
+      const a = r.asset!;
+      const up = await uploadImage(a.uri, "chat", orderId, { mimeType: a.mimeType, fileName: a.fileName });
       send.mutate({ photo_file_id: up.id });
     } catch (e: any) { toast(e.message, "error"); }
   }

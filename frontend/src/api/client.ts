@@ -47,14 +47,28 @@ export function fileUrl(fileId?: string | null): string | undefined {
 }
 
 // Upload a local image uri to object storage via backend. Returns { id, kind }.
-export async function uploadImage(uri: string, kind: string, orderId?: string) {
-  const name = `upload_${Date.now()}.jpg`;
+// opts carries the picked asset's real mimeType/fileName so any gallery format
+// (jpg/png/webp/gif/heic) uploads with the correct type and extension.
+export async function uploadImage(
+  uri: string,
+  kind: string,
+  orderId?: string,
+  opts?: { mimeType?: string; fileName?: string },
+) {
+  const mime = (opts?.mimeType || "image/jpeg").toLowerCase();
+  const ext = mime.includes("png") ? "png"
+    : mime.includes("webp") ? "webp"
+    : mime.includes("gif") ? "gif"
+    : mime.includes("heic") ? "heic"
+    : mime.includes("heif") ? "heif"
+    : "jpg";
+  const name = opts?.fileName || `upload_${Date.now()}.${ext}`;
   const form = new FormData();
   if (Platform.OS === "web") {
     const blob = await (await fetch(uri)).blob();
     form.append("file", blob, name);
   } else {
-    form.append("file", { uri, name, type: "image/jpeg" } as any);
+    form.append("file", { uri, name, type: mime } as any);
   }
   form.append("kind", kind);
   if (orderId) form.append("order_id", orderId);

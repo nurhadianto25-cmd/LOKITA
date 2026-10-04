@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable, Modal, Linking, Platform } from "react-native";
+import { View, Text, ScrollView, Pressable, Modal } from "react-native";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -14,6 +13,7 @@ import { DeliveryMap } from "@/src/components/DeliveryMap";
 import { useToast } from "@/src/components/Toast";
 import { useAuth } from "@/src/auth/auth";
 import { api, fileUrl, uploadImage } from "@/src/api/client";
+import { pickFromGallery, captureWithCamera, openAppSettings } from "@/src/utils/media";
 import { ORDER_STATUS, PAYMENT_STATUS, rupiah } from "@/src/constants";
 
 export default function OrderDetail() {
@@ -69,25 +69,17 @@ export default function OrderDetail() {
   const delivered = ["DISERAHKAN", "DITITIPKAN", "MENUNGGU_PENYELESAIAN"].includes(o.status);
 
   async function pickProof(fromCamera: boolean) {
-    const perm = fromCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      if (!perm.canAskAgain) {
-        toast("Izin ditolak. Buka Pengaturan untuk mengaktifkan.", "error");
-        Linking.openSettings();
-      } else {
-        toast("Izin kamera/galeri diperlukan untuk foto bukti", "error");
-      }
+    const r = fromCamera ? await captureWithCamera() : await pickFromGallery();
+    if (!r.ok) {
+      if (r.canceled) return;
+      if (r.blocked) { toast("Izin ditolak. Buka Pengaturan untuk mengaktifkan.", "error"); openAppSettings(); }
+      else if (r.error) toast(r.error, "error");
       return;
     }
-    const res = fromCamera
-      ? await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.6 })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.6 });
-    if (res.canceled || !res.assets?.[0]) return;
     setUploading(true);
     try {
-      const up = await uploadImage(res.assets[0].uri, "proof", o.id);
+      const a = r.asset!;
+      const up = await uploadImage(a.uri, "proof", o.id, { mimeType: a.mimeType, fileName: a.fileName });
       setProofs((p) => [...p, up.id].slice(0, 2));
     } catch (e: any) {
       toast(e.message, "error");

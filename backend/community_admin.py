@@ -12,8 +12,8 @@ from typing import Optional
 import secrets
 
 from core import (
-    communities, memberships, users, stores, products, orders, audit_logs,
-    new_id, now, iso, current_user, NO_ID, audit, notify,
+    communities, memberships, users, stores, products, orders, audit_logs, join_requests,
+    new_id, now, iso, current_user, NO_ID, audit, notify, leave_other_communities,
 )
 
 router = APIRouter(prefix="/api/communities", tags=["community-admin"])
@@ -95,6 +95,7 @@ async def dashboard(cid: str, user: dict = Depends(current_user)):
         series.append({"label": day.strftime("%d/%m"), "value": count})
 
     status = c.get("verification_status") or ("verified" if c.get("verified") else "unverified")
+    pending_requests = await join_requests.count_documents({"community_id": cid, "status": "pending"})
     return {
         "id": c["id"],
         "name": c["name"],
@@ -104,6 +105,7 @@ async def dashboard(cid: str, user: dict = Depends(current_user)):
         "invite_code": c.get("invite_code"),
         "owner_id": c.get("owner_id"),
         "my_role": role,
+        "pending_requests": pending_requests,
         "stats": {
             "total_members": total_members,
             "active_members": active_members,
@@ -369,3 +371,65 @@ async def community_audit(cid: str, user: dict = Depends(current_user)):
             "created_at": iso(d.get("created_at")),
         })
     return out
+
+
+# --------------------------------------------------------------------------- join requests
+@router.get("/{cid}/join-requests")
+async def list_join_requests(cid: str, user: dict = Depends(current_user)):
+    await _access(user, cid, 2)
+    docs = await join_requests.find(
+        {"community_id": cid, "status": "pending"}, NO_ID).sort("created_at", -1).to_list(200)
+    uids = [d["user_id"] for d in docs]
+    udocs = {u["id"]: u for u in await users.find({"id": {"$in": uids}}, NO_ID).to_list(200)}
+    out = []
+    for d in docs:
+        u = udocs.get(d["user_id"], {})
+        out.append({
+            "id": d["id"],
+            "user_id": d["user_id"],
+            "user_name": u.get("name") or d.get("user_name") or "Pengguna",
+            "phone": _mask_phone(u.get("phone")),
+            "reliability": (u.get("reliability") or {}).get("score", 100),
+            "created_at": iso(d.get("created_at")),
+        })
+    return out
+
+
+@router.post("/{cid}/join-requests/{req_id}/approve")
+async def approve_join_request(cid: str, req_id: str, user: dict = Depends(current_user)):
+    await _access(user, cid, 2)
+    r = await join_requests.find_one({"id": req_id, "community_id": cid, "status": "pending"})
+    if not r:
+        raise HTTPException(404, "Permintaan tidak ditemukan")
+    uid = r["user_id"]
+    if not await memberships.find_one({"user_id": uid, "community_id": cid}):
+        await memberships.insert_one({"id": new_id(), "user_id": uid, "community_id": cid,
+                                      "role": "member", "created_at": now()})
+        tu = await users.find_one({"id": uid}, NO_ID)
+        roles = (tu.get("community_roles") or {}) if tu else {}
+        roles[cid] = "member"
+        await users.update_one({"id": uid}, {"$set": {"community_roles": roles}})
+    # one user = one community: drop other (non-owned) memberships
+    await leave_other_communities(uid, cid)
+    await join_requests.update_one({"id": req_id},
+                                   {"$set": {"status": "approved", "decided_at": now(), "decided_by": user["id"]}})
+    await audit(user["id"], "community.join.approve", uid, {"community": cid})
+    c = await communities.find_one({"id": cid}, NO_ID)
+    await notify(uid, "community", "Permintaan bergabung disetujui",
+                 f"Anda kini menjadi anggota {c['name']}.")
+    return {"ok": True}
+
+
+@router.post("/{cid}/join-requests/{req_id}/reject")
+async def reject_join_request(cid: str, req_id: str, user: dict = Depends(current_user)):
+    await _access(user, cid, 2)
+    r = await join_requests.find_one({"id": req_id, "community_id": cid, "status": "pending"})
+    if not r:
+        raise HTTPException(404, "Permintaan tidak ditemukan")
+    await join_requests.update_one({"id": req_id},
+                                   {"$set": {"status": "rejected", "decided_at": now(), "decided_by": user["id"]}})
+    await audit(user["id"], "community.join.reject", r["user_id"], {"community": cid})
+    c = await communities.find_one({"id": cid}, NO_ID)
+    await notify(r["user_id"], "community", "Permintaan bergabung ditolak",
+                 f"Permintaan Anda untuk bergabung ke {c['name']} belum disetujui.")
+    return {"ok": True}

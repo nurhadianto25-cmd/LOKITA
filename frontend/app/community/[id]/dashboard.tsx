@@ -37,12 +37,13 @@ export default function CommunityDashboard() {
 
   const base = `/community/${id}`;
   const actions = [
-    { icon: "people-outline", label: "Anggota", to: `${base}/members`, show: true, testID: "action-members" },
-    { icon: "storefront-outline", label: "Seller & Toko", to: `${base}/stores`, show: true, testID: "action-stores" },
-    { icon: "shield-checkmark-outline", label: "Admin & Moderator", to: `${base}/staff`, show: isAdmin, testID: "action-staff" },
-    { icon: "qr-code-outline", label: "Undangan / QR", to: `${base}/invite`, show: isAdmin, testID: "action-invite" },
-    { icon: "settings-outline", label: "Pengaturan", to: `${base}/settings`, show: isAdmin, testID: "action-settings" },
-    { icon: "receipt-outline", label: "Audit Log", to: `${base}/audit`, show: isAdmin, testID: "action-audit" },
+    { icon: "people-outline", label: "Anggota", to: `${base}/members`, show: true, testID: "action-members", badge: 0 },
+    { icon: "person-add-outline", label: "Permintaan", to: `${base}/requests`, show: isAdmin, testID: "action-requests", badge: d.pending_requests || 0 },
+    { icon: "storefront-outline", label: "Seller & Toko", to: `${base}/stores`, show: true, testID: "action-stores", badge: 0 },
+    { icon: "shield-checkmark-outline", label: "Admin & Moderator", to: `${base}/staff`, show: isAdmin, testID: "action-staff", badge: 0 },
+    { icon: "qr-code-outline", label: "Undangan / QR", to: `${base}/invite`, show: isAdmin, testID: "action-invite", badge: 0 },
+    { icon: "settings-outline", label: "Pengaturan", to: `${base}/settings`, show: isAdmin, testID: "action-settings", badge: 0 },
+    { icon: "receipt-outline", label: "Audit Log", to: `${base}/audit`, show: isAdmin, testID: "action-audit", badge: 0 },
   ].filter((a) => a.show);
 
   return (
@@ -92,7 +93,7 @@ export default function CommunityDashboard() {
           <Text style={styles.sectionTitle}>Kelola</Text>
           <View style={styles.grid}>
             {actions.map((a) => (
-              <ActionTile key={a.to} testID={a.testID} icon={a.icon} label={a.label}
+              <ActionTile key={a.to} testID={a.testID} icon={a.icon} label={a.label} badge={a.badge}
                 onPress={() => router.push(a.to as any)} />
             ))}
           </View>

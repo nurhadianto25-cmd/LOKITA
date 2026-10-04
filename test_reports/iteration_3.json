@@ -1,0 +1,50 @@
+{
+  "summary": "LOKITA Stage 13 — image upload (all gallery types), community search by name, request-join approval flow, and one-user=one-community auto-leave — all 16 new backend pytest cases PASS (POST /api/files accepts png/jpg/webp/gif/heic/heif and rejects text/plain; product photo update persists photo_file_id; /communities/search returns member/pending/none join_status; /communities/{cid}/request-join creates pending request and notifies admins; duplicate request -> 400; member cannot approve/list requests -> 403; approve/reject work and reject keeps user out of membership; joining via invite code triggers leave_other_communities keeping OWNED communities and dropping non-owned; approve-join also triggers auto-leave; owned communities are preserved). Frontend smoke on mobile viewport (390x844): login as seller 081200000001/123456 → Beranda redesign renders completely (LOKITA logo, bell with unread badge '28', 'Halo, Bu' profile chip, 'Komunitas Aktif' card showing '2 toko • 134 anggota', search bar, green promo banner, category circles Makanan/Sembako/Fashion/Rumah dan Taman/Jasa, 'Promo Hari Ini' + 'Toko Terdekat' promo cards, 'Toko Sedang Buka' horizontal store section). All 5 bottom tabs visible: Beranda, Toko Saya, Pesanan, Chat, Lainnya. Toko Saya for seller shows edit-store-btn + manage-products-btn + seller-dashboard-btn (no 'Buka Toko' CTA — correct). /community/select renders community-search-input + invite-code-input + join-community-btn + create-community-btn; typing 'Pi' triggers backend search and renders a non-member result with 'Bergabung' pill (CTA working) and the member community with 'Terdaftar' label. No React Native red screen. Known seed-data note: DB has >1 'Komunitas Pilot LOKITA' documents due to prior test iterations creating duplicates — not a product bug, flagged for cleanup.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/communities (seed data)", "issue": "DB contains duplicate communities named 'Komunitas Pilot LOKITA' from prior stage11/12 tests; only one has invite_code=LOKITA. Harmless but makes name-based assertions ambiguous."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/(tabs)/index.tsx — Beranda", "issues": ["Beranda matches reference: logo + bell(badge)+Halo chip header; Komunitas Aktif card; search bar; green promo banner with 'Belanja Lebih Dekat Lebih Bermakna' + 'Dari Warga Untuk Warga'; 5 category circles; dual promo cards; 'Toko Sedang Buka' horizontal; 'Rekomendasi' grid — all 8pt-aligned."]},
+      {"screen": "/community/select", "issues": ["Search input + results render clear status pills: 'Bergabung' (CTA) for non-member, 'Terdaftar' for member, 'Menunggu' for pending — good state clarity."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_stage13.py",
+    "/app/test_reports/pytest/stage13_results.xml"
+  ],
+  "action_items": [
+    "No functional fix needed — all Stage 13 features pass backend + frontend smoke.",
+    "Optional cleanup: dedupe test-created 'Komunitas Pilot LOKITA' entries in Mongo (keep only the one with invite_code='LOKITA').",
+    "Nice-to-have (carry-over from iteration_2): migrate shadow* StyleSheet props to boxShadow to silence RN 0.76+ deprecation warning."
+  ],
+  "critical_code_review_comments": [
+    "misc.py:upload_file — correctly validates content_type starts with 'image/', 8MB limit, maps png/webp/gif/heic/heif/jpeg to extension. Clean.",
+    "client.ts:uploadImage — Platform.OS branch sends blob on web and {uri,name,type:mimeType} object on native; passes real asset mimeType from media.ts picker. Correct.",
+    "media.ts:pickFromGallery — mediaTypes=['images','livePhotos'], returns asset.mimeType; no format filtering. Good.",
+    "communities.py:/search — returns join_status: member|pending|none using memberships + join_requests collections. Correct.",
+    "communities.py:/{cid}/request-join — guards against existing membership and duplicate pending request (400); notifies all owners+admins; audits. Correct.",
+    "community_admin.py:/{cid}/join-requests + approve/reject — _access min_rank=2 (admin+) with super_admin bypass; approve inserts membership and calls leave_other_communities(uid, cid); reject keeps user out. Correct.",
+    "core.py:leave_other_communities — iterates memberships, skips keep_cid and any community where owner_id==user_id, deletes other memberships, updates community_roles map and active_community_id. Owned communities preserved — spec met."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_stage13.py (new)",
+    "/app/test_reports/iteration_3.json (new)",
+    "/app/test_reports/pytest/stage13_results.xml (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 Stage 13 cases)",
+    "frontend": "100% of Stage 13 screens render and behave as spec (Beranda, 5 tabs, Toko Saya, community/select search + Bergabung CTA)"
+  },
+  "seed_data_creation": "Stage 13 fixtures create ephemeral TEST users (phone prefix 08138…) and TEST communities (prefix 'TEST C2/C3/CX') to validate auto-leave across owned vs non-owned communities. All test users remain in DB with 'TEST ' name prefix.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Stage 13 coverage lives in /app/backend/tests/test_stage13.py (16 cases, ~16s). Run with `python -m pytest backend/tests/test_stage13.py` (xdist 2 workers). The product-photo update test requires sending the FULL ProductIn payload (name, price, stock, category, photo_file_id) — PATCH-style partial update is NOT supported. There is no GET /api/seller/products/{pid} (405); use list GET /api/seller/products and filter by id. The DB has duplicate Komunitas Pilot LOKITA entries — use invite_code='LOKITA' or join_status==member to disambiguate, not name match. For UI tests: login button testID is 'request-otp-btn' (not 'phone-continue-btn') and existing-user PIN input is 'loginpin-input' with submit 'login-btn'. Beranda testIDs: active-community-card, active-community-name, search-bar, cat-{key}, store-{id}, product-{id}, add-{id}, notifications-btn, profile-chip. Community select testIDs: community-search-input, invite-code-input, join-community-btn, create-community-btn, request-join-{cid}, search-result-{cid}.",
+  "rca_of_issue": "No defects in Stage 13 scope. The 'Pilot' name-match ambiguity surfaced during initial test authoring is pure seed-data pollution from earlier iterations: /api/communities/create was called with name 'Komunitas Pilot LOKITA' (or similar) by prior fixtures. The code correctly stores and queries by UUID id; name is a user-facing label. Mitigation: Mongo one-liner — `db.communities.delete_many({'name':'Komunitas Pilot LOKITA','invite_code':{'$ne':'LOKITA'}})`."
+}

@@ -16,6 +16,10 @@ export default function TabsLayout() {
           <NativeTabs.Trigger.Icon sf="house.fill" />
           <NativeTabs.Trigger.Label>Beranda</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="toko">
+          <NativeTabs.Trigger.Icon sf="storefront.fill" />
+          <NativeTabs.Trigger.Label>Toko Saya</NativeTabs.Trigger.Label>
+        </NativeTabs.Trigger>
         <NativeTabs.Trigger name="pesanan">
           <NativeTabs.Trigger.Icon sf="bag.fill" />
           <NativeTabs.Trigger.Label>Pesanan</NativeTabs.Trigger.Label>
@@ -25,8 +29,8 @@ export default function TabsLayout() {
           <NativeTabs.Trigger.Label>Chat</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="akun">
-          <NativeTabs.Trigger.Icon sf="person.fill" />
-          <NativeTabs.Trigger.Label>Akun</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon sf="line.3.horizontal" />
+          <NativeTabs.Trigger.Label>Lainnya</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
       </NativeTabs>
     );
@@ -52,9 +56,10 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Beranda", tabBarIcon: icon("home") }} />
+      <Tabs.Screen name="toko" options={{ title: "Toko Saya", tabBarIcon: icon("storefront") }} />
       <Tabs.Screen name="pesanan" options={{ title: "Pesanan", tabBarIcon: icon("bag") }} />
       <Tabs.Screen name="chat" options={{ title: "Chat", tabBarIcon: icon("chatbubble") }} />
-      <Tabs.Screen name="akun" options={{ title: "Akun", tabBarIcon: icon("person") }} />
+      <Tabs.Screen name="akun" options={{ title: "Lainnya", tabBarIcon: icon("menu") }} />
     </Tabs>
   );
 }
