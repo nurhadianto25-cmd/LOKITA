@@ -6,7 +6,7 @@ import time
 import pytest
 import requests
 
-BASE = os.environ.get("EXPO_PUBLIC_BACKEND_URL", "https://structured-orders.preview.emergentagent.com").rstrip("/")
+BASE = os.environ.get("EXPO_PUBLIC_BACKEND_URL", "https://github-lokita.preview.emergentagent.com").rstrip("/")
 API = f"{BASE}/api"
 PILOT_CODE = "LOKITA"
 
