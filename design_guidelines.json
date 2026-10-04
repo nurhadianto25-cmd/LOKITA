@@ -1,0 +1,159 @@
+{
+  "app_name": "LOKITA",
+  "personality": "1 iOS-Native Clean",
+  "personality_one_liner": "A clean, trustworthy, and highly native marketplace interface prioritizing content, clear community-driven commerce, and reliable order tracking.",
+  "color": {
+    "surface": "#FFFFFF",
+    "onSurface": "#111827",
+    "surfaceSecondary": "#F3F4F6",
+    "onSurfaceSecondary": "#374151",
+    "surfaceTertiary": "#E5E7EB",
+    "onSurfaceTertiary": "#4B5563",
+    "surfaceInverse": "#1F2937",
+    "onSurfaceInverse": "#F9FAFB",
+    "brand": "#0FA958",
+    "brandPrimary": "#0FA958",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#FF7F00",
+    "onBrandSecondary": "#FFFFFF",
+    "brandTertiary": "#E6F6EC",
+    "onBrandTertiary": "#0B7A3F",
+    "success": "#0FA958",
+    "onSuccess": "#FFFFFF",
+    "warning": "#F59E0B",
+    "onWarning": "#FFFFFF",
+    "error": "#EF4444",
+    "onError": "#FFFFFF",
+    "info": "#6B7280",
+    "onInfo": "#FFFFFF",
+    "border": "#E5E7EB",
+    "borderStrong": "#D1D5DB",
+    "divider": "#F3F4F6",
+    "muted": "#6B7280",
+    "onBrand": "#FFFFFF"
+  },
+  "typography": {
+    "displayFontFamily": "Plus Jakarta Sans",
+    "textFontFamily": "Plus Jakarta Sans",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous comfortable padding; never cramp interactive elements. Cards use md (12px) margin between them.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "1",
+  "navigation": "bottom_tabs",
+  "icon_set": "Ionicons",
+  "glassmorphism": {
+    "enabled": "true",
+    "do's": [
+      "Use on sticky headers over scrolling content.",
+      "Use on the bottom tab bar.",
+      "Use on floating action buttons (FABs) and bottom-sheet headers."
+    ],
+    "dont's": [
+      "Do not use on regular list rows or form fields.",
+      "Avoid on high-density data screens or purely functional settings pages."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Beranda (Home)",
+      "purpose": "Discover the active community, browse local sellers, and find products.",
+      "states": {
+        "loading": "Skeleton UI for top categories and store cards.",
+        "empty": "Illustration of a neighborhood with 'Belum ada toko di komunitas ini' (No stores in this community yet) + 'Undang Penjual' CTA.",
+        "error": "'Gagal memuat komunitas' (Failed to load community) + Retry button."
+      },
+      "layout": "Header with active community name/location and a prominent search bar. Below header: horizontal scroll for categories/filters. Main content: vertical feed of seller profiles/store cards with featured product thumbnails. Floating Action Button for active orders if any."
+    },
+    {
+      "name": "Pesanan (Orders)",
+      "purpose": "Track active orders with a live status timeline and view order history.",
+      "states": {
+        "loading": "Spinner centered.",
+        "empty": "Illustration of an empty delivery bag with 'Belum ada pesanan aktif' + CTA to browse.",
+        "error": "Error message with Retry."
+      },
+      "layout": "Top Tabs (Aktif, Riwayat). Aktif tab: Card-based list of active orders with a mini live status timeline (progress indicator from MENUNGGU_KONFIRMASI to SELESAI), countdown timers (e.g., 04:59 Menunggu Konfirmasi Penjual), and map snapshot if 'Sedang Diantar'. Prominent 'Chat Penjual' button."
+    },
+    {
+      "name": "Chat",
+      "purpose": "Order-linked messaging between buyer and seller with photo sharing.",
+      "states": {
+        "loading": "Skeleton chat rows.",
+        "empty": "Illustration with 'Belum ada pesan' (No messages yet).",
+        "error": "Failed to load chats + Retry."
+      },
+      "layout": "Standard list of active chat threads. Inside chat: sticky header with order context/status badge, message bubbles (right for self, left for seller), input area with attachment (photo) icon. Input disabled when order status is SELESAI."
+    },
+    {
+      "name": "Titip di Rumah (Proof of Delivery Capture)",
+      "purpose": "Allow sellers/deliverers to capture two mandatory proof photos when leaving orders at the door.",
+      "states": {
+        "loading": "Processing image upload overlay.",
+        "empty": "N/A",
+        "error": "Upload failed toast + retry on image block."
+      },
+      "layout": "Full-screen modal. Shows order details, two large photo upload/capture square slots ('Foto Paket di Lokasi' & 'Foto Nomor Rumah/Patokan'). Submit button enabled only when both photos are present."
+    }
+  ],
+  "images": {
+    "logo_placeholder": {
+      "url": "https://images.unsplash.com/photo-1658204238967-3a81a063d162?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwyfHxtb2JpbGUlMjBhcHAlMjBpY29uJTIwbGV0dGVyJTIwTHxlbnwwfHx8Z3JlZW58MTc5MTExNzQwNXww&ixlib=rb-4.1.0&q=85",
+      "alt": "LOKITA Green L Logo Placeholder"
+    },
+    "food_nasi_goreng": {
+      "url": "https://images.unsplash.com/photo-1611506168759-1e69a83b5a53?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwzfHxpbmRvbmVzaWFuJTIwZm9vZCUyMG5hc2klMjBnb3Jlbmd8ZW58MHx8fHwxNzkxMTE3NDA1fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Indonesian Nasi Goreng"
+    },
+    "delivery_scooter": {
+      "url": "https://images.unsplash.com/photo-1509969525999-ab875043f0b7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHxmb29kJTIwZGVsaXZlcnklMjBiYWclMjBvbiUyMHNjb290ZXJ8ZW58MHx8fG9yYW5nZXwxNzkxMTE3NDAwfDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Orange delivery scooter"
+    },
+    "neighborhood_aerial": {
+      "url": "https://images.unsplash.com/photo-1461175827210-5ceac3e39dd2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzV8MHwxfHNlYXJjaHwxfHxsb2NhbCUyMG5laWdoYm9yaG9vZCUyMG1hcmtldCUyMGFlcmlhbCUyMHZpZXd8ZW58MHx8fGdyZWVufDE3OTExMTc0MDB8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Aerial view of a local neighborhood community"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Implement navigation using 4 bottom tabs: Beranda, Pesanan, Chat, and Akun.",
+    "Strictly follow the color palette provided (green primary, orange accent). Do NOT use any blue, purple, or indigo shades anywhere in the app, even for system defaults or interactive states.",
+    "Use 'Plus Jakarta Sans' for all text elements. Cap font weights at 500 max (do not use semi-bold, bold, etc., rely on size for hierarchy).",
+    "For the active order timeline in the 'Pesanan' screen, implement a vertical or horizontal progress sequence matching the states provided in the problem statement (MENUNGGU_KONFIRMASI -> DIKONFIRMASI -> SEDANG_DIPROSES -> SIAP_DIANTAR -> SEDANG_DIANTAR -> DISERAHKAN/DITITIPKAN -> MENUNGGU_PENYELESAIAN -> SELESAI).",
+    "Integrate a live countdown timer component for time-sensitive actions (e.g., 5-min seller confirmation), styled clearly to drive urgency.",
+    "All copy and UI labels MUST be in Bahasa Indonesia (e.g., Keranjang, Beranda, Titip di Rumah).",
+    "When displaying images as hero banners or over text, ALWAYS apply a top-to-bottom vertical gradient scrim to ensure text readability.",
+    "Implement haptics on major interactions like adding to cart, order status updates, and submitting proof of delivery."
+  ]
+}
