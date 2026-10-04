@@ -10,6 +10,7 @@ import { makeStyles, useTheme } from "@/src/theme";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { Icon, Loading, Button, Badge, Card, Input, Field } from "@/src/components/ui";
 import { Countdown } from "@/src/components/Countdown";
+import { DeliveryMap } from "@/src/components/DeliveryMap";
 import { useToast } from "@/src/components/Toast";
 import { useAuth } from "@/src/auth/auth";
 import { api, fileUrl, uploadImage } from "@/src/api/client";
@@ -125,6 +126,23 @@ export default function OrderDetail() {
             <Text style={styles.note}>{isSeller ? "Konfirmasi dalam 5 menit atau pesanan batal otomatis." : "Penjual akan mengonfirmasi dalam 5 menit."}</Text>
           ) : null}
         </Card>
+
+        {/* delivery tracking */}
+        {["SIAP_DIANTAR", "SEDANG_DIANTAR"].includes(o.status) ? (
+          <Card>
+            <Text style={styles.cardTitle}>Pelacakan Pengiriman</Text>
+            <DeliveryMap lat={o.store_lat} lng={o.store_lng} label={o.store_name} />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 }}>
+              <Icon name="bicycle" size={18} color={colors.brandSecondary} />
+              <Text style={[styles.note, { marginTop: 0, flex: 1 }]}>
+                {o.status === "SEDANG_DIANTAR"
+                  ? "Pesanan sedang dalam perjalanan ke lokasi Anda."
+                  : "Penjual bersiap mengantar pesanan Anda."}
+                {o.delivery_window ? ` Perkiraan: ${o.delivery_window}.` : ""}
+              </Text>
+            </View>
+          </Card>
+        ) : null}
 
         {/* items */}
         <Card>

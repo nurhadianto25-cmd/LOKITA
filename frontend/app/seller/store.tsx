@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
+import { Linking } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -43,6 +45,7 @@ export default function SellerStore() {
       delivery_windows: f.delivery_mode === "B" ? String(f.delivery_windows_text || "").split(",").map((x: string) => x.trim()).filter(Boolean) : [],
       supports_cod: f.supports_cod, supports_qris: f.supports_qris,
       qris_file_id: f.qris_file_id, logo_file_id: f.logo_file_id, cover_file_id: f.cover_file_id,
+      lat: f.lat ?? null, lng: f.lng ?? null,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["my-store"] });
@@ -62,6 +65,22 @@ export default function SellerStore() {
       const up = await uploadImage(res.assets[0].uri, kind);
       setF((p: any) => ({ ...p, [field]: up.id }));
     } catch (e: any) { toast(e.message, "error"); }
+  }
+
+  async function captureLocation() {
+    const perm = await Location.requestForegroundPermissionsAsync();
+    if (!perm.granted) {
+      if (!perm.canAskAgain) { toast("Izin lokasi ditolak. Buka Pengaturan.", "error"); Linking.openSettings(); }
+      else toast("Izin lokasi diperlukan untuk menandai toko", "error");
+      return;
+    }
+    try {
+      const pos = await Location.getCurrentPositionAsync({});
+      setF((p: any) => ({ ...p, lat: pos.coords.latitude, lng: pos.coords.longitude }));
+      toast("Lokasi toko tersimpan", "success");
+    } catch {
+      toast("Gagal mengambil lokasi", "error");
+    }
   }
 
   if (store.isLoading) return <View style={styles.root}><ScreenHeader title="Toko" /><Loading /></View>;
@@ -94,6 +113,16 @@ export default function SellerStore() {
 
         <Field label="Jam Operasional"><Input testID="store-hours" value={f.hours} onChangeText={set("hours")} placeholder="08:00 - 20:00" /></Field>
         <Field label="Jangkauan Pengiriman"><Input testID="store-range" value={f.delivery_range} onChangeText={set("delivery_range")} placeholder="mis. Dalam komunitas" /></Field>
+
+        <Field label="Lokasi Toko (untuk pelacakan pengiriman)">
+          <Pressable testID="capture-location-btn" onPress={captureLocation} style={styles.locBtn}>
+            <Icon name="location" size={18} color={colors.brandPrimary} />
+            <Text style={styles.locText}>
+              {typeof f.lat === "number" ? `Tersimpan: ${f.lat.toFixed(4)}, ${f.lng.toFixed(4)}` : "Gunakan Lokasi Saat Ini"}
+            </Text>
+            <Icon name="chevron-forward" size={16} color={colors.muted} />
+          </Pressable>
+        </Field>
 
         <Field label="Mode Pengiriman">
           <View style={styles.chips}>
@@ -167,6 +196,8 @@ const useStyles = makeStyles((c) => ({
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1 },
   qrisBox: { height: 150, borderRadius: 12, borderWidth: 1, borderColor: c.border, backgroundColor: c.surfaceSecondary, alignItems: "center", justifyContent: "center" },
+  locBtn: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: c.surfaceTertiary, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13 },
+  locText: { flex: 1, fontSize: 14, color: c.onSurface },
   toggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6 },
   toggleLabel: { fontSize: 15, color: c.onSurface },
   switch: { width: 48, height: 28, borderRadius: 14, padding: 3, justifyContent: "center" },

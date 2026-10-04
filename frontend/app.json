@@ -12,16 +12,17 @@
       "bundleIdentifier": "com.emergent.structuredorders.kmll9t",
       "infoPlist": {
         "NSCameraUsageDescription": "Ambil foto produk dan bukti pengiriman",
-        "NSPhotoLibraryUsageDescription": "Pilih foto produk dan bukti dari galeri"
+        "NSPhotoLibraryUsageDescription": "Pilih foto produk dan bukti dari galeri",
+        "NSLocationWhenInUseUsageDescription": "Tandai lokasi toko untuk pelacakan pengiriman"
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#0FA958"
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.emergent.structuredorders.kmll9t",
-      "permissions": ["CAMERA", "READ_MEDIA_IMAGES"]
+      "permissions": ["CAMERA", "READ_MEDIA_IMAGES", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
     },
     "web": {
       "bundler": "metro",
@@ -36,7 +37,7 @@
           "image": "./assets/images/splash-image.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#0FA958"
+          "backgroundColor": "#FFFFFF"
         }
       ],
       [
@@ -44,6 +45,12 @@
         {
           "photosPermission": "Pilih foto produk dan bukti dari galeri",
           "cameraPermission": "Ambil foto produk dan bukti pengiriman"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Tandai lokasi toko untuk pelacakan pengiriman"
         }
       ],
       "expo-font",

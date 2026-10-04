@@ -45,7 +45,7 @@ export default function CommunitySelect() {
   return (
     <View style={styles.root}>
       <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 8 }}>
-        <Logo size={24} />
+        <Logo size={40} />
       </View>
       <FlatList
         data={mine.data || []}

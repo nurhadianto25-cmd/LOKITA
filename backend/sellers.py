@@ -25,6 +25,8 @@ class StoreIn(BaseModel):
     supports_cod: bool = True
     supports_qris: bool = True
     qris_file_id: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
 
 
 class Variant(BaseModel):

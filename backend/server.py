@@ -97,6 +97,7 @@ async def _seed():
             "hours": "08:00 - 20:00", "delivery_range": "Dalam komunitas",
             "delivery_mode": "A", "delivery_windows": [], "supports_cod": True,
             "supports_qris": True, "qris_file_id": None, "is_open": True,
+            "lat": -6.2001, "lng": 106.8166,
             "rating": 4.8, "rating_count": 24, "deleted_at": None, "created_at": now(),
         }
         await stores.insert_one(store)
@@ -113,6 +114,10 @@ async def _seed():
                 "category": cat, "photo_file_id": None, "variants": [], "addons": [],
                 "active": True, "deleted_at": None, "created_at": now(),
             })
+
+    # ensure demo store has coordinates (for delivery tracking demo)
+    await stores.update_one({"name": "Warung Bu Sri", "lat": {"$in": [None, 0]}},
+                            {"$set": {"lat": -6.2001, "lng": 106.8166}})
 
     logger.info("Seed complete. Pilot community code=%s", PILOT_CODE)
 

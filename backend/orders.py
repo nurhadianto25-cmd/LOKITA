@@ -73,6 +73,9 @@ async def _enrich(o: dict) -> dict:
     o["store_name"] = s["name"] if s else "Toko"
     o["supports_cod"] = s.get("supports_cod", True) if s else True
     o["qris_file_id"] = s.get("qris_file_id") if s else None
+    o["store_lat"] = s.get("lat") if s else None
+    o["store_lng"] = s.get("lng") if s else None
+    o["delivery_range"] = s.get("delivery_range") if s else None
     buyer = await users.find_one({"id": o["buyer_id"]}, NO_ID)
     o["buyer_name"] = (buyer.get("name") if buyer else "") or "Pembeli"
     o["buyer_phone"] = buyer.get("phone") if buyer else None
